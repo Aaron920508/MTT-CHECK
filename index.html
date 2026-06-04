@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTT中心设备与环境管理检查表</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+  :root {
+    --primary: #1a4a6b;
+    --primary-light: #2d6a9f;
+    --accent: #e8a020;
+    --danger: #c0392b;
+    --success: #27ae60;
+    --warn: #e67e22;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --text: #1e2d3d;
+    --muted: #6b7c93;
+    --border: #dce6f0;
+    --shadow: 0 2px 12px rgba(26,74,107,0.10);
+    --A: #1a6b4a;
+    --A-light: #eafaf1;
+    --B: #1a4a6b;
+    --B-light: #eaf2fb;
+    --C: #6b3a1a;
+    --C-light: #fdf3ea;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 120px; }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: #fff; padding: 18px 16px 14px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 3px 16px rgba(26,74,107,0.25);
+  }
+  .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .header h1 { font-size: 15px; font-weight: 700; line-height: 1.3; }
+  .header h2 { font-size: 11px; font-weight: 300; opacity: 0.8; margin-top: 2px; }
+  .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .meta-field { background: rgba(255,255,255,0.15); border-radius: 8px; padding: 7px 10px; }
+  .meta-field label { font-size: 10px; opacity: 0.75; display: block; margin-bottom: 2px; }
+  .meta-field input { background: transparent; border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 500; width: 100%; outline: none; }
+  .meta-field input::placeholder { color: rgba(255,255,255,0.45); }
+
+  /* ZONE TABS */
+  .zone-tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--border); position: sticky; top: 116px; z-index: 90; box-shadow: var(--shadow); }
+  .zone-tab { flex: 1; padding: 10px 4px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; color: var(--muted); background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+  .zone-tab.A.active { color: var(--A); border-bottom-color: var(--A); }
+  .zone-tab.B.active { color: var(--B); border-bottom-color: var(--B); }
+  .zone-tab.C.active { color: var(--C); border-bottom-color: var(--C); }
+  .zone-tab .tab-score { display: block; font-size: 18px; font-weight: 700; line-height: 1.1; }
+  .zone-tab .tab-label { font-size: 10px; }
+  .zone-tab.A .tab-score { color: var(--A); }
+  .zone-tab.B .tab-score { color: var(--B); }
+  .zone-tab.C .tab-score { color: var(--C); }
+
+  /* ZONE PANEL */
+  .zone-panel { display: none; padding: 10px 12px; }
+  .zone-panel.active { display: block; }
+
+  /* ZONE HEADER CARD */
+  .zone-header-card { border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .zone-header-card.A { background: var(--A-light); border-left: 4px solid var(--A); }
+  .zone-header-card.B { background: var(--B-light); border-left: 4px solid var(--B); }
+  .zone-header-card.C { background: var(--C-light); border-left: 4px solid var(--C); }
+  .zone-name { font-size: 15px; font-weight: 700; }
+  .zone-name.A { color: var(--A); }
+  .zone-name.B { color: var(--B); }
+  .zone-name.C { color: var(--C); }
+  .zone-devices { font-size: 12px; color: var(--muted); margin: 4px 0 10px; line-height: 1.6; }
+  .zone-person-row { display: flex; align-items: center; gap: 8px; }
+  .zone-person-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .zone-person-row input { border: 1.5px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px; font-family: inherit; flex: 1; background: #fff; }
+
+  /* SCORE MINI BAR */
+  .score-mini { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; background: var(--card); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow); }
+  .score-mini-num { font-size: 28px; font-weight: 700; min-width: 44px; }
+  .score-mini-num.A { color: var(--A); }
+  .score-mini-num.B { color: var(--B); }
+  .score-mini-num.C { color: var(--C); }
+  .score-mini-bar { flex: 1; }
+  .progress-track { background: var(--border); border-radius: 4px; height: 8px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .progress-fill.A { background: linear-gradient(90deg, var(--A), #52be80); }
+  .progress-fill.B { background: linear-gradient(90deg, var(--B), var(--primary-light)); }
+  .progress-fill.C { background: linear-gradient(90deg, var(--C), var(--accent)); }
+  .score-mini-grade { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; white-space: nowrap; }
+
+  /* SECTION */
+  .section { margin-bottom: 10px; }
+  .section-header { padding: 9px 14px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px; }
+  .section-header.A { background: var(--A); }
+  .section-header.B { background: var(--B); }
+  .section-header.C { background: var(--C); }
+  .section-body { background: var(--card); border-radius: 0 0 10px 10px; overflow: hidden; box-shadow: var(--shadow); }
+
+  /* CHECK ITEM */
+  .check-item { border-bottom: 1px solid var(--border); padding: 12px 14px; }
+  .check-item:last-child { border-bottom: none; }
+  .check-item.has-issue { background: #fff8f5; }
+  .item-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .item-standard { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .item-deduct { font-size: 11px; color: var(--danger); margin-top: 2px; }
+
+  .radio-group { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .radio-btn { border: 1.5px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all 0.2s; background: #fff; color: var(--muted); font-family: inherit; white-space: nowrap; }
+  .radio-btn.pass { border-color: var(--success); background: #eafaf1; color: var(--success); font-weight: 600; }
+  .radio-btn.fail { border-color: var(--danger); background: #fdf0ee; color: var(--danger); font-weight: 600; }
+  .radio-btn.na { border-color: #bbb; background: #f5f5f5; color: #999; }
+
+  .deduct-row { display: none; margin-top: 8px; align-items: center; gap: 8px; }
+  .deduct-row.visible { display: flex; }
+  .deduct-row label { font-size: 12px; color: var(--danger); white-space: nowrap; }
+  .deduct-row input { border: 1.5px solid var(--danger); border-radius: 6px; padding: 4px 8px; font-size: 13px; width: 56px; text-align: center; font-family: inherit; color: var(--danger); background: #fff8f7; }
+
+  .note-row { margin-top: 8px; }
+  .note-row textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; font-family: inherit; resize: none; color: var(--text); background: #fafcff; min-height: 48px; }
+  .note-row textarea:focus { outline: none; border-color: var(--primary-light); }
+
+  .photo-row { margin-top: 8px; }
+  .photo-label-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1.5px dashed var(--primary-light); border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--primary-light); cursor: pointer; font-family: inherit; }
+  .photo-input { display: none; }
+  .photo-previews { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .photo-thumb { width: 68px; height: 68px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); cursor: pointer; }
+
+  /* SUMMARY TAB */
+  .summary-panel { padding: 12px; }
+  .summary-zone-card { border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 12px; }
+  .summary-zone-header { padding: 10px 16px; color: #fff; font-size: 14px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+  .summary-zone-header.A { background: var(--A); }
+  .summary-zone-header.B { background: var(--B); }
+  .summary-zone-header.C { background: var(--C); }
+  .summary-zone-body { background: var(--card); padding: 12px 16px; }
+  .summary-person { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .summary-item-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .summary-item-row:last-child { border-bottom: none; }
+  .deduct-tag { color: var(--danger); font-weight: 700; }
+  .ok-tag { color: var(--success); }
+  .zone-total-row { margin-top: 8px; background: var(--bg); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+  .zone-total-score { font-size: 24px; font-weight: 700; }
+  .zone-total-score.A { color: var(--A); }
+  .zone-total-score.B { color: var(--B); }
+  .zone-total-score.C { color: var(--C); }
+  .grade-badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+  .grade-A { background: #eafaf1; color: var(--success); }
+  .grade-B { background: #fef9e7; color: #d4ac0d; }
+  .grade-C { background: #fdf2e9; color: var(--warn); }
+  .grade-D { background: #fdf0ee; color: var(--danger); }
+
+  .overall-card { background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 14px; padding: 18px; color: #fff; margin-bottom: 16px; }
+  .overall-title { font-size: 13px; opacity: 0.8; margin-bottom: 6px; }
+  .overall-scores { display: flex; gap: 0; }
+  .overall-score-item { flex: 1; text-align: center; }
+  .overall-score-item + .overall-score-item { border-left: 1px solid rgba(255,255,255,0.25); }
+  .overall-zone-label { font-size: 11px; opacity: 0.75; }
+  .overall-zone-score { font-size: 26px; font-weight: 700; }
+  .overall-zone-grade { font-size: 11px; opacity: 0.85; }
+
+  .sign-row { display: flex; gap: 10px; margin-top: 10px; }
+  .sign-field { flex: 1; background: #fff; border-radius: 10px; padding: 10px 12px; box-shadow: var(--shadow); }
+  .sign-field label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 4px; }
+  .sign-field input { border: none; border-bottom: 1.5px solid var(--border); width: 100%; font-size: 13px; font-family: inherit; padding: 2px 0; background: transparent; outline: none; }
+
+  .export-btn { display: block; margin: 0 12px 12px; padding: 16px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; text-align: center; box-shadow: 0 4px 16px rgba(26,74,107,0.3); }
+
+  @media print { .export-btn, .zone-tabs { display: none; } .zone-panel { display: block !important; } body { padding: 0; } }
+
+  /* NATIVE RADIO APPROACH - iOS safe */
+  .radio-group { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .radio-group input[type=radio] { display: none; }
+  .radio-group label {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 10px 18px;
+    border: 2px solid var(--border); border-radius: 24px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: #fff; color: var(--muted);
+    font-family: inherit; white-space: nowrap;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+  .radio-group input[type=radio]:checked + label { font-weight: 700; }
+  .radio-group input[type=radio].r-pass:checked + label {
+    border-color: var(--success); background: #eafaf1; color: var(--success);
+  }
+  .radio-group input[type=radio].r-fail:checked + label {
+    border-color: var(--danger); background: #fdf0ee; color: var(--danger);
+  }
+  .radio-group input[type=radio].r-na:checked + label {
+    border-color: #aaa; background: #f5f5f5; color: #888;
+  }
+  .radio-btn { display: none; } /* hide old buttons */
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <span style="font-size:24px">🏥</span>
+    <div>
+      <h1>运动医学康复（MTT）中心</h1>
+      <h2>设备与环境管理检查表 · 湖北省中医院</h2>
+    </div>
+  </div>
+  <div class="meta-row">
+    <div class="meta-field">
+      <label>📅 检查日期</label>
+      <input type="date" id="checkDate">
+    </div>
+    <div class="meta-field">
+      <label>👤 检查员</label>
+      <input type="text" id="inspector" placeholder="姓名">
+    </div>
+  </div>
+</div>
+
+<!-- ZONE TABS -->
+<div class="zone-tabs">
+  <button class="zone-tab A active" onclick="switchTab('A')">
+    <span class="tab-score A" id="tabScore-A">100</span>
+    <span class="tab-label">A区·力量循环</span>
+  </button>
+  <button class="zone-tab B" onclick="switchTab('B')">
+    <span class="tab-score B" id="tabScore-B">100</span>
+    <span class="tab-label">B区·手法设备</span>
+  </button>
+  <button class="zone-tab C" onclick="switchTab('C')">
+    <span class="tab-score C" id="tabScore-C">100</span>
+    <span class="tab-label">C区·地垫综合</span>
+  </button>
+  <button class="zone-tab" onclick="switchTab('S')" style="color:var(--muted)">
+    <span class="tab-score" id="tabScore-S" style="color:var(--primary);font-size:15px">📊</span>
+    <span class="tab-label">汇总</span>
+  </button>
+</div>
+
+<!-- ========== A区 ========== -->
+<div class="zone-panel active" id="panel-A">
+  <div class="zone-header-card A">
+    <div class="zone-name A">A区 · 力量循环区</div>
+    <div class="zone-devices">Compass套件 · 气阻套件 · 电视屏 · 运动处方系统</div>
+    <div class="zone-person-row">
+      <label>责任人：</label>
+      <input type="text" id="person-A" placeholder="填写本期责任人姓名">
+    </div>
+  </div>
+
+  <div class="score-mini">
+    <span class="score-mini-num A" id="score-A">100</span>
+    <div class="score-mini-bar">
+      <div class="progress-track"><div class="progress-fill A" id="bar-A" style="width:100%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px" id="grade-A">满分 · 优秀</div>
+    </div>
+    <span class="score-mini-grade grade-A" id="badge-A">A · 优秀</span>
+  </div>
+
+  <!-- SOP -->
+  <div class="section">
+    <div class="section-header A">📋 制度与安全</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="A" data-id="A-s1" data-deduct="2">
+        <div class="item-name">SOP张贴</div>
+        <div class="item-standard">Compass等设备旁须张贴简明操作指南或二维码</div>
+        <div class="item-deduct">⚠ 未张贴一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg1" id="rg1-pass" onchange="onRadioChange(this,'pass')"><label for="rg1-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg1" id="rg1-fail" onchange="onRadioChange(this,'fail')"><label for="rg1-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg1" id="rg1-na" onchange="onRadioChange(this,'na')"><label for="rg1-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-s1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-s2" data-deduct="5">
+        <div class="item-name">安全隐患</div>
+        <div class="item-standard">线路完好，电源与水源保持安全距离</div>
+        <div class="item-deduct">⚠ 发现安全隐患一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg2" id="rg2-pass" onchange="onRadioChange(this,'pass')"><label for="rg2-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg2" id="rg2-fail" onchange="onRadioChange(this,'fail')"><label for="rg2-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg2" id="rg2-na" onchange="onRadioChange(this,'na')"><label for="rg2-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-s2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header A">🔧 设备维护</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="A" data-id="A-d1" data-deduct="2">
+        <div class="item-name">一级维护（随用随检）</div>
+        <div class="item-standard">Compass等设备表面清洁，无灰尘汗渍残留</div>
+        <div class="item-deduct">⚠ 发现污渍一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg3" id="rg3-pass" onchange="onRadioChange(this,'pass')"><label for="rg3-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg3" id="rg3-fail" onchange="onRadioChange(this,'fail')"><label for="rg3-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg3" id="rg3-na" onchange="onRadioChange(this,'na')"><label for="rg3-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-d1"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-d2" data-deduct="2">
+        <div class="item-name">二级维护（日检）</div>
+        <div class="item-standard">设备靠墙，线路无交叉，附件划线定位，电量充足</div>
+        <div class="item-deduct">⚠ 线缆凌乱或未归位一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg4" id="rg4-pass" onchange="onRadioChange(this,'pass')"><label for="rg4-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg4" id="rg4-fail" onchange="onRadioChange(this,'fail')"><label for="rg4-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg4" id="rg4-na" onchange="onRadioChange(this,'na')"><label for="rg4-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-d2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-d3" data-deduct="5">
+        <div class="item-name">三级维护（周检）</div>
+        <div class="item-standard">Compass绳索无磨损，滑轮顺畅，结构无异常</div>
+        <div class="item-deduct">⚠ 结构异常未上报一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg5" id="rg5-pass" onchange="onRadioChange(this,'pass')"><label for="rg5-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg5" id="rg5-fail" onchange="onRadioChange(this,'fail')"><label for="rg5-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg5" id="rg5-na" onchange="onRadioChange(this,'na')"><label for="rg5-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-d3"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-d4" data-deduct="1">
+        <div class="item-name">耗材补充</div>
+        <div class="item-standard">纸巾等耗材充足，及时补充</div>
+        <div class="item-deduct">⚠ 耗材短缺未补充一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg6" id="rg6-pass" onchange="onRadioChange(this,'pass')"><label for="rg6-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg6" id="rg6-fail" onchange="onRadioChange(this,'fail')"><label for="rg6-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg6" id="rg6-na" onchange="onRadioChange(this,'na')"><label for="rg6-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-d4"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header A">🧹 卫生与环境</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="A" data-id="A-e1" data-deduct="1">
+        <div class="item-name">表面清洁</div>
+        <div class="item-standard">机器浮灰、镜面手印清理干净</div>
+        <div class="item-deduct">⚠ 发现灰尘或手印一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg7" id="rg7-pass" onchange="onRadioChange(this,'pass')"><label for="rg7-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg7" id="rg7-fail" onchange="onRadioChange(this,'fail')"><label for="rg7-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg7" id="rg7-na" onchange="onRadioChange(this,'na')"><label for="rg7-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-e1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-e2" data-deduct="2">
+        <div class="item-name">办公区内务</div>
+        <div class="item-standard">桌面仅留必需品，线缆集线规整，无私人物品乱放</div>
+        <div class="item-deduct">⚠ 私人物品乱放或线缆杂乱扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg8" id="rg8-pass" onchange="onRadioChange(this,'pass')"><label for="rg8-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg8" id="rg8-fail" onchange="onRadioChange(this,'fail')"><label for="rg8-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg8" id="rg8-na" onchange="onRadioChange(this,'na')"><label for="rg8-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-e2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="A" data-id="A-e3" data-deduct="1">
+        <div class="item-name">绿植维护</div>
+        <div class="item-standard">每周浇水1-2次，及时清理枯叶、黄叶及盆内杂物</div>
+        <div class="item-deduct">⚠ 未浇水或枯叶未清理一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg9" id="rg9-pass" onchange="onRadioChange(this,'pass')"><label for="rg9-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg9" id="rg9-fail" onchange="onRadioChange(this,'fail')"><label for="rg9-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg9" id="rg9-na" onchange="onRadioChange(this,'na')"><label for="rg9-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-A-e3"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('A')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== B区 ========== -->
+<div class="zone-panel" id="panel-B">
+  <div class="zone-header-card B">
+    <div class="zone-name B">B区 · 手法设备区</div>
+    <div class="zone-devices">等速 · 多点多轴 · Imoove · 超声波 · Inbody · 冷疗 · 气压 · 冲击波 · 射频</div>
+    <div class="zone-person-row">
+      <label>责任人：</label>
+      <input type="text" id="person-B" placeholder="填写本期责任人姓名">
+    </div>
+  </div>
+
+  <div class="score-mini">
+    <span class="score-mini-num B" id="score-B">100</span>
+    <div class="score-mini-bar">
+      <div class="progress-track"><div class="progress-fill B" id="bar-B" style="width:100%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px" id="grade-B">满分 · 优秀</div>
+    </div>
+    <span class="score-mini-grade grade-A" id="badge-B">A · 优秀</span>
+  </div>
+
+  <div class="section">
+    <div class="section-header B">📋 制度与安全</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="B" data-id="B-s1" data-deduct="2">
+        <div class="item-name">SOP张贴</div>
+        <div class="item-standard">等速、冲击波、超声波等仪器旁须张贴操作指南或二维码</div>
+        <div class="item-deduct">⚠ 未张贴一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg10" id="rg10-pass" onchange="onRadioChange(this,'pass')"><label for="rg10-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg10" id="rg10-fail" onchange="onRadioChange(this,'fail')"><label for="rg10-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg10" id="rg10-na" onchange="onRadioChange(this,'na')"><label for="rg10-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-s1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-s2" data-deduct="5">
+        <div class="item-name">安全隐患</div>
+        <div class="item-standard">高频设备线路完好，水电距离安全，激光防护眼镜就位</div>
+        <div class="item-deduct">⚠ 发现安全隐患一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg11" id="rg11-pass" onchange="onRadioChange(this,'pass')"><label for="rg11-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg11" id="rg11-fail" onchange="onRadioChange(this,'fail')"><label for="rg11-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg11" id="rg11-na" onchange="onRadioChange(this,'na')"><label for="rg11-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-s2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header B">🔧 设备维护</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="B" data-id="B-d1" data-deduct="2">
+        <div class="item-name">一级维护（随用随检）</div>
+        <div class="item-standard">无耦合剂、导电膏残留，超声探头清洁归位，DGO探头放置抽屉</div>
+        <div class="item-deduct">⚠ 发现污渍残留一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg12" id="rg12-pass" onchange="onRadioChange(this,'pass')"><label for="rg12-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg12" id="rg12-fail" onchange="onRadioChange(this,'fail')"><label for="rg12-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg12" id="rg12-na" onchange="onRadioChange(this,'na')"><label for="rg12-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-d1"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-d2" data-deduct="2">
+        <div class="item-name">二级维护（日检）</div>
+        <div class="item-standard">设备靠墙，线路整洁，电子贴片充足干净，电量充足</div>
+        <div class="item-deduct">⚠ 线缆凌乱或未归位一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg13" id="rg13-pass" onchange="onRadioChange(this,'pass')"><label for="rg13-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg13" id="rg13-fail" onchange="onRadioChange(this,'fail')"><label for="rg13-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg13" id="rg13-na" onchange="onRadioChange(this,'na')"><label for="rg13-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-d2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-d3" data-deduct="5">
+        <div class="item-name">三级维护（周检）</div>
+        <div class="item-standard">等速结构无异常，Imoove运行顺畅</div>
+        <div class="item-deduct">⚠ 结构异常未上报一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg14" id="rg14-pass" onchange="onRadioChange(this,'pass')"><label for="rg14-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg14" id="rg14-fail" onchange="onRadioChange(this,'fail')"><label for="rg14-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg14" id="rg14-na" onchange="onRadioChange(this,'na')"><label for="rg14-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-d3"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-d4" data-deduct="1">
+        <div class="item-name">耗材补充</div>
+        <div class="item-standard">耦合剂、导电膏、纸巾等耗材充足</div>
+        <div class="item-deduct">⚠ 耗材短缺未补充一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg15" id="rg15-pass" onchange="onRadioChange(this,'pass')"><label for="rg15-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg15" id="rg15-fail" onchange="onRadioChange(this,'fail')"><label for="rg15-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg15" id="rg15-na" onchange="onRadioChange(this,'na')"><label for="rg15-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-d4"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header B">🧹 卫生与环境</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="B" data-id="B-e1" data-deduct="1">
+        <div class="item-name">表面清洁</div>
+        <div class="item-standard">Inbody脚垫及周边清洁，机器无浮灰</div>
+        <div class="item-deduct">⚠ 发现灰尘或污渍一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg16" id="rg16-pass" onchange="onRadioChange(this,'pass')"><label for="rg16-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg16" id="rg16-fail" onchange="onRadioChange(this,'fail')"><label for="rg16-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg16" id="rg16-na" onchange="onRadioChange(this,'na')"><label for="rg16-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-e1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-e2" data-deduct="1">
+        <div class="item-name">治疗床区</div>
+        <div class="item-standard">治疗床对齐划线，座椅推入床底，床单平整无污渍，辅件方向统一</div>
+        <div class="item-deduct">⚠ 床位不齐或床单褶皱一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg17" id="rg17-pass" onchange="onRadioChange(this,'pass')"><label for="rg17-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg17" id="rg17-fail" onchange="onRadioChange(this,'fail')"><label for="rg17-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg17" id="rg17-na" onchange="onRadioChange(this,'na')"><label for="rg17-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-e2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-e3" data-deduct="1">
+        <div class="item-name">布草规范</div>
+        <div class="item-standard">孔巾、毛巾、治疗巾按指定规格叠放，分类存放</div>
+        <div class="item-deduct">⚠ 叠放不规范或未分类一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg18" id="rg18-pass" onchange="onRadioChange(this,'pass')"><label for="rg18-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg18" id="rg18-fail" onchange="onRadioChange(this,'fail')"><label for="rg18-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg18" id="rg18-na" onchange="onRadioChange(this,'na')"><label for="rg18-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-e3"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="B" data-id="B-e4" data-deduct="2">
+        <div class="item-name">患者置物区</div>
+        <div class="item-standard">储物柜门常闭，柜内无患者废弃物</div>
+        <div class="item-deduct">⚠ 遗留垃圾扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg19" id="rg19-pass" onchange="onRadioChange(this,'pass')"><label for="rg19-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg19" id="rg19-fail" onchange="onRadioChange(this,'fail')"><label for="rg19-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg19" id="rg19-na" onchange="onRadioChange(this,'na')"><label for="rg19-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-B-e4"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('B')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== C区 ========== -->
+<div class="zone-panel" id="panel-C">
+  <div class="zone-header-card C">
+    <div class="zone-name C">C区 · 地垫综合区</div>
+    <div class="zone-devices">心肺设备 · 有氧器械 · 攀岩墙 · 无轨迹训练台 · 壶铃 · 哑铃 · 杠铃</div>
+    <div class="zone-person-row">
+      <label>责任人：</label>
+      <input type="text" id="person-C" placeholder="填写本期责任人姓名">
+    </div>
+  </div>
+
+  <div class="score-mini">
+    <span class="score-mini-num C" id="score-C">100</span>
+    <div class="score-mini-bar">
+      <div class="progress-track"><div class="progress-fill C" id="bar-C" style="width:100%"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px" id="grade-C">满分 · 优秀</div>
+    </div>
+    <span class="score-mini-grade grade-A" id="badge-C">A · 优秀</span>
+  </div>
+
+  <div class="section">
+    <div class="section-header C">📋 制度与安全</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="C" data-id="C-s1" data-deduct="2">
+        <div class="item-name">SOP张贴</div>
+        <div class="item-standard">无轨迹、心肺设备等旁须张贴操作指南或二维码</div>
+        <div class="item-deduct">⚠ 未张贴一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg20" id="rg20-pass" onchange="onRadioChange(this,'pass')"><label for="rg20-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg20" id="rg20-fail" onchange="onRadioChange(this,'fail')"><label for="rg20-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg20" id="rg20-na" onchange="onRadioChange(this,'na')"><label for="rg20-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-s1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="C" data-id="C-s2" data-deduct="5">
+        <div class="item-name">安全隐患</div>
+        <div class="item-standard">地垫无破损翘边，器械摆放稳固，无绊倒风险</div>
+        <div class="item-deduct">⚠ 发现安全隐患一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg21" id="rg21-pass" onchange="onRadioChange(this,'pass')"><label for="rg21-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg21" id="rg21-fail" onchange="onRadioChange(this,'fail')"><label for="rg21-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg21" id="rg21-na" onchange="onRadioChange(this,'na')"><label for="rg21-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-s2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header C">🔧 设备维护</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="C" data-id="C-d1" data-deduct="2">
+        <div class="item-name">一级维护（随用随检）</div>
+        <div class="item-standard">有氧设备、壶铃、哑铃表面清洁，无汗渍残留</div>
+        <div class="item-deduct">⚠ 发现污渍一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg22" id="rg22-pass" onchange="onRadioChange(this,'pass')"><label for="rg22-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg22" id="rg22-fail" onchange="onRadioChange(this,'fail')"><label for="rg22-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg22" id="rg22-na" onchange="onRadioChange(this,'na')"><label for="rg22-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-d1"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="C" data-id="C-d2" data-deduct="2">
+        <div class="item-name">二级维护（日检）</div>
+        <div class="item-standard">壶铃、哑铃、杠铃归位划线区域，无散乱放置</div>
+        <div class="item-deduct">⚠ 器械未归位一处扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg23" id="rg23-pass" onchange="onRadioChange(this,'pass')"><label for="rg23-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg23" id="rg23-fail" onchange="onRadioChange(this,'fail')"><label for="rg23-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg23" id="rg23-na" onchange="onRadioChange(this,'na')"><label for="rg23-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-d2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="C" data-id="C-d3" data-deduct="5">
+        <div class="item-name">三级维护（周检）</div>
+        <div class="item-standard">无轨迹训练台、攀岩墙结构无异常，绳索无磨损，滑轮顺畅</div>
+        <div class="item-deduct">⚠ 结构异常未上报一处扣5分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg24" id="rg24-pass" onchange="onRadioChange(this,'pass')"><label for="rg24-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg24" id="rg24-fail" onchange="onRadioChange(this,'fail')"><label for="rg24-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg24" id="rg24-na" onchange="onRadioChange(this,'na')"><label for="rg24-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-d3"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×5分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header C">🧹 卫生与环境</div>
+    <div class="section-body">
+      <div class="check-item" data-zone="C" data-id="C-e1" data-deduct="1">
+        <div class="item-name">地垫区清洁</div>
+        <div class="item-standard">地垫区无灰层、毛发，地垫拼缝整齐无翘起</div>
+        <div class="item-deduct">⚠ 发现灰尘或毛发一处扣1分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg25" id="rg25-pass" onchange="onRadioChange(this,'pass')"><label for="rg25-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg25" id="rg25-fail" onchange="onRadioChange(this,'fail')"><label for="rg25-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg25" id="rg25-na" onchange="onRadioChange(this,'na')"><label for="rg25-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-e1"><label>处数：</label><input type="number" min="0" max="10" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×1分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+      <div class="check-item" data-zone="C" data-id="C-e2" data-deduct="2">
+        <div class="item-name">生活区</div>
+        <div class="item-standard">水杯摆放整齐，严禁存放食物，无异味</div>
+        <div class="item-deduct">⚠ 发现食物或异味扣2分</div>
+        <div class="radio-group"><input type="radio" class="r-pass" name="rg26" id="rg26-pass" onchange="onRadioChange(this,'pass')"><label for="rg26-pass">✅ 合格</label><input type="radio" class="r-fail" name="rg26" id="rg26-fail" onchange="onRadioChange(this,'fail')"><label for="rg26-fail">❌ 不合格</label><input type="radio" class="r-na" name="rg26" id="rg26-na" onchange="onRadioChange(this,'na')"><label for="rg26-na">— 不适用</label></div>
+        <div class="deduct-row" id="deduct-C-e2"><label>处数：</label><input type="number" min="0" max="5" value="1" onchange="calcZone('C')"><span style="font-size:11px;color:var(--danger)">×2分</span></div>
+        <div class="note-row"><textarea placeholder="备注…"></textarea></div>
+        <div class="photo-row"><label class="photo-label-btn">📷 拍照取证<input type="file" class="photo-input" accept="image/*" capture="environment" multiple onchange="previewPhotos(this)"></label><div class="photo-previews"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 汇总 ========== -->
+<div class="zone-panel" id="panel-S">
+  <div class="summary-panel" style="padding:0">
+
+    <div class="overall-card">
+      <div class="overall-title">📊 三区综合得分</div>
+      <div class="overall-scores">
+        <div class="overall-score-item">
+          <div class="overall-zone-label">A区·力量循环</div>
+          <div class="overall-zone-score" id="ov-A">100</div>
+          <div class="overall-zone-grade" id="ov-grade-A">优秀</div>
+        </div>
+        <div class="overall-score-item">
+          <div class="overall-zone-label">B区·手法设备</div>
+          <div class="overall-zone-score" id="ov-B">100</div>
+          <div class="overall-zone-grade" id="ov-grade-B">优秀</div>
+        </div>
+        <div class="overall-score-item">
+          <div class="overall-zone-label">C区·地垫综合</div>
+          <div class="overall-zone-score" id="ov-C">100</div>
+          <div class="overall-zone-grade" id="ov-grade-C">优秀</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- A -->
+    <div class="summary-zone-card">
+      <div class="summary-zone-header A">
+        <span>A区 · 力量循环区</span>
+        <span id="sum-score-A">100分</span>
+      </div>
+      <div class="summary-zone-body">
+        <div class="summary-person" id="sum-person-A">责任人：—</div>
+        <div id="sum-items-A"></div>
+        <div class="zone-total-row">
+          <span style="font-size:13px;color:var(--muted)">区域得分</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="zone-total-score A" id="sum-total-A">100</span>
+            <span class="grade-badge grade-A" id="sum-badge-A">A·优秀</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="summary-zone-card">
+      <div class="summary-zone-header B">
+        <span>B区 · 手法设备区</span>
+        <span id="sum-score-B">100分</span>
+      </div>
+      <div class="summary-zone-body">
+        <div class="summary-person" id="sum-person-B">责任人：—</div>
+        <div id="sum-items-B"></div>
+        <div class="zone-total-row">
+          <span style="font-size:13px;color:var(--muted)">区域得分</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="zone-total-score B" id="sum-total-B">100</span>
+            <span class="grade-badge grade-A" id="sum-badge-B">A·优秀</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="summary-zone-card">
+      <div class="summary-zone-header C">
+        <span>C区 · 地垫综合区</span>
+        <span id="sum-score-C">100分</span>
+      </div>
+      <div class="summary-zone-body">
+        <div class="summary-person" id="sum-person-C">责任人：—</div>
+        <div id="sum-items-C"></div>
+        <div class="zone-total-row">
+          <span style="font-size:13px;color:var(--muted)">区域得分</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="zone-total-score C" id="sum-total-C">100</span>
+            <span class="grade-badge grade-A" id="sum-badge-C">A·优秀</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGN -->
+    <div style="padding:0 12px 12px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">签字确认</div>
+      <div class="sign-row">
+        <div class="sign-field"><label>检查员签字</label><input type="text" id="sign-inspector" placeholder=""></div>
+        <div class="sign-field"><label>科室负责人签字</label><input type="text" id="sign-leader" placeholder=""></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<button class="export-btn" onclick="exportPDF()">📄 导出 PDF 检查报告</button>
+
+<script>
+const zoneItems = {
+  A: ['A-s1','A-s2','A-d1','A-d2','A-d3','A-d4','A-e1','A-e2','A-e3'],
+  B: ['B-s1','B-s2','B-d1','B-d2','B-d3','B-d4','B-e1','B-e2','B-e3','B-e4'],
+  C: ['C-s1','C-s2','C-d1','C-d2','C-d3','C-e1','C-e2']
+};
+const state = {};
+document.querySelectorAll('.check-item').forEach(el => {
+  const id = el.dataset.id;
+  if (id) state[id] = { status: null, deductPer: parseInt(el.dataset.deduct)||1 };
+});
+
+function switchTab(zone) {
+  document.querySelectorAll('.zone-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.zone-panel').forEach(p => p.classList.remove('active'));
+  const tab = document.querySelector(`.zone-tab.${zone}`) || document.querySelector(`.zone-tab[onclick="switchTab('${zone}')"]`);
+  if (tab) tab.classList.add('active');
+  document.getElementById('panel-' + zone).classList.add('active');
+  if (zone === 'S') updateSummary();
+}
+
+function setStatus(btn, status) {
+  const item = btn.closest('.check-item');
+  const id = item.dataset.id;
+  const zone = item.dataset.zone;
+  state[id].status = status;
+  item.querySelectorAll('.radio-btn').forEach(b => b.classList.remove('pass','fail','na'));
+  btn.classList.add(status);
+  const dr = document.getElementById('deduct-' + id);
+  if (status === 'fail') { dr.classList.add('visible'); item.classList.add('has-issue'); }
+  else { dr.classList.remove('visible'); item.classList.remove('has-issue'); }
+  calcZone(zone);
+}
+
+function calcZone(zone) {
+  let total = 100;
+  const ids = zoneItems[zone] || [];
+  ids.forEach(id => {
+    const s = state[id];
+    if (!s || s.status !== 'fail') return;
+    const dr = document.getElementById('deduct-' + id);
+    const count = dr ? (parseInt(dr.querySelector('input')?.value)||1) : 1;
+    total -= count * s.deductPer;
+  });
+  total = Math.max(0, total);
+  const { grade, gradeClass, gradeText } = getGrade(total);
+  document.getElementById('score-' + zone).textContent = total;
+  document.getElementById('bar-' + zone).style.width = total + '%';
+  document.getElementById('grade-' + zone).textContent = gradeText;
+  const badge = document.getElementById('badge-' + zone);
+  badge.className = 'score-mini-grade ' + gradeClass;
+  badge.textContent = grade + ' · ' + gradeText.split(' · ')[1] || gradeText;
+  document.getElementById('tabScore-' + zone).textContent = total;
+  document.getElementById('ov-' + zone).textContent = total;
+  document.getElementById('ov-grade-' + zone).textContent = gradeText.replace(/^. · /,'');
+}
+
+function getGrade(score) {
+  if (score >= 90) return { grade:'A', gradeClass:'grade-A', gradeText:'A · 优秀' };
+  if (score >= 80) return { grade:'B', gradeClass:'grade-B', gradeText:'B · 良好' };
+  if (score >= 70) return { grade:'C', gradeClass:'grade-C', gradeText:'C · 待改进' };
+  return { grade:'D', gradeClass:'grade-D', gradeText:'D · 不合格' };
+}
+
+function updateSummary() {
+  ['A','B','C'].forEach(zone => {
+    const person = document.getElementById('person-' + zone)?.value || '未填写';
+    document.getElementById('sum-person-' + zone).textContent = '责任人：' + person;
+    const score = parseInt(document.getElementById('score-' + zone).textContent);
+    document.getElementById('sum-score-' + zone).textContent = score + '分';
+    document.getElementById('sum-total-' + zone).textContent = score;
+    const { grade, gradeClass, gradeText } = getGrade(score);
+    const b = document.getElementById('sum-badge-' + zone);
+    b.className = 'grade-badge ' + gradeClass;
+    b.textContent = gradeText;
+
+    const container = document.getElementById('sum-items-' + zone);
+    const ids = zoneItems[zone];
+    container.innerHTML = ids.map(id => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (!el) return '';
+      const name = el.querySelector('.item-name')?.textContent || id;
+      const s = state[id];
+      const dr = document.getElementById('deduct-' + id);
+      const count = (s.status === 'fail' && dr) ? (parseInt(dr.querySelector('input')?.value)||1) : 0;
+      const pts = s.status === 'fail' ? count * s.deductPer : 0;
+      const statusText = s.status === 'pass' ? '✅' : s.status === 'fail' ? '❌' : s.status === 'na' ? '—' : '⬜';
+      return `<div class="summary-item-row">
+        <span>${statusText} ${name}</span>
+        <span class="${pts>0?'deduct-tag':'ok-tag'}">${pts>0?'-'+pts+'分':'合格'}</span>
+      </div>`;
+    }).join('');
+  });
+}
+
+function previewPhotos(input) {
+  const container = input.closest('.photo-row').querySelector('.photo-previews');
+  Array.from(input.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.className = 'photo-thumb';
+      img.onclick = () => { const w = window.open(); w.document.write(`<img src="${e.target.result}" style="max-width:100%">`); };
+      container.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function exportPDF() {
+  const date = document.getElementById('checkDate').value || '未填写';
+  const inspector = document.getElementById('inspector').value || '未填写';
+  const signLeader = document.getElementById('sign-leader').value || '未签字';
+
+  let zoneBlocks = '';
+  const zoneNames = { A:'A区·力量循环区', B:'B区·手法设备区', C:'C区·地垫综合区' };
+  const zoneColors = { A:'#1a6b4a', B:'#1a4a6b', C:'#6b3a1a' };
+
+  ['A','B','C'].forEach(zone => {
+    const person = document.getElementById('person-' + zone)?.value || '未填写';
+    const score = document.getElementById('score-' + zone).textContent;
+    const { gradeText } = getGrade(parseInt(score));
+    const ids = zoneItems[zone];
+    let rows = '';
+    ids.forEach(id => {
+      const el = document.querySelector(`[data-id="${id}"]`);
+      if (!el) return;
+      const name = el.querySelector('.item-name')?.textContent || '';
+      const note = el.querySelector('textarea')?.value || '';
+      const s = state[id];
+      const dr = document.getElementById('deduct-' + id);
+      const count = (s.status === 'fail' && dr) ? (parseInt(dr.querySelector('input')?.value)||1) : 0;
+      const pts = s.status === 'fail' ? count * s.deductPer : 0;
+      const statusText = s.status === 'pass' ? '✅ 合格' : s.status === 'fail' ? '❌ 不合格' : s.status === 'na' ? '— 不适用' : '⬜ 未检查';
+      const thumbs = el.querySelectorAll('.photo-thumb');
+      let photos = '';
+      thumbs.forEach(t => { photos += `<img src="${t.src}" style="width:60px;height:60px;object-fit:cover;border-radius:4px;margin:2px;">`; });
+      rows += `<tr>
+        <td>${name}</td><td>${statusText}</td>
+        <td style="color:${pts>0?'#c0392b':'#27ae60'};font-weight:700">${pts>0?'-'+pts+'分':'✓'}</td>
+        <td>${note}</td><td>${photos||'无'}</td>
+      </tr>`;
+    });
+    zoneBlocks += `
+      <div style="margin-bottom:24px">
+        <div style="background:${zoneColors[zone]};color:#fff;padding:10px 16px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:14px;font-weight:700">${zoneNames[zone]}</span>
+          <span>${score}分 · ${gradeText}</span>
+        </div>
+        <div style="background:#f8f9fa;padding:8px 16px;font-size:12px;color:#666;border-bottom:1px solid #dce6f0">责任人：${person}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:#f0f4f8">
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #dce6f0">检查项目</th>
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #dce6f0">结果</th>
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #dce6f0">扣分</th>
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #dce6f0">备注</th>
+            <th style="padding:8px;text-align:left;border-bottom:1px solid #dce6f0">照片</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+
+  const scA = document.getElementById('score-A').textContent;
+  const scB = document.getElementById('score-B').textContent;
+  const scC = document.getElementById('score-C').textContent;
+
+  const html = `<!DOCTYPE html><html lang="zh-CN"><head>
+  <meta charset="UTF-8"><title>MTT检查报告-${date}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap');
+    body { font-family:'Noto Sans SC',sans-serif; max-width:850px; margin:0 auto; padding:24px; color:#1e2d3d; font-size:13px; }
+    @media print { body { padding:0; } }
+    td { padding:8px; border-bottom:1px solid #dce6f0; vertical-align:top; }
+  
+  /* NATIVE RADIO APPROACH - iOS safe */
+  .radio-group { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .radio-group input[type=radio] { display: none; }
+  .radio-group label {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 10px 18px;
+    border: 2px solid var(--border); border-radius: 24px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: #fff; color: var(--muted);
+    font-family: inherit; white-space: nowrap;
+    transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none; -webkit-user-select: none;
+  }
+  .radio-group input[type=radio]:checked + label { font-weight: 700; }
+  .radio-group input[type=radio].r-pass:checked + label {
+    border-color: var(--success); background: #eafaf1; color: var(--success);
+  }
+  .radio-group input[type=radio].r-fail:checked + label {
+    border-color: var(--danger); background: #fdf0ee; color: var(--danger);
+  }
+  .radio-group input[type=radio].r-na:checked + label {
+    border-color: #aaa; background: #f5f5f5; color: #888;
+  }
+  .radio-btn { display: none; } /* hide old buttons */
+</style></head><body>
+  <div style="background:linear-gradient(135deg,#1a4a6b,#2d6a9f);color:#fff;padding:20px 24px;border-radius:12px;margin-bottom:20px">
+    <div style="font-size:20px;font-weight:700;margin-bottom:4px">🏥 运动医学康复（MTT）中心</div>
+    <div style="font-size:13px;opacity:0.85">设备与环境管理检查报告 · 湖北省中医院</div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:12px">
+      <span style="background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:6px">📅 ${date}</span>
+      <span style="background:rgba(255,255,255,0.2);padding:4px 10px;border-radius:6px">👤 检查员：${inspector}</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:20px">
+    <div style="flex:1;background:#eafaf1;border-radius:10px;padding:12px;text-align:center;border-top:3px solid #1a6b4a">
+      <div style="font-size:11px;color:#666">A区·力量循环</div>
+      <div style="font-size:28px;font-weight:700;color:#1a6b4a">${scA}</div>
+      <div style="font-size:11px;color:#1a6b4a">${getGrade(parseInt(scA)).gradeText}</div>
+    </div>
+    <div style="flex:1;background:#eaf2fb;border-radius:10px;padding:12px;text-align:center;border-top:3px solid #1a4a6b">
+      <div style="font-size:11px;color:#666">B区·手法设备</div>
+      <div style="font-size:28px;font-weight:700;color:#1a4a6b">${scB}</div>
+      <div style="font-size:11px;color:#1a4a6b">${getGrade(parseInt(scB)).gradeText}</div>
+    </div>
+    <div style="flex:1;background:#fdf3ea;border-radius:10px;padding:12px;text-align:center;border-top:3px solid #6b3a1a">
+      <div style="font-size:11px;color:#666">C区·地垫综合</div>
+      <div style="font-size:28px;font-weight:700;color:#6b3a1a">${scC}</div>
+      <div style="font-size:11px;color:#6b3a1a">${getGrade(parseInt(scC)).gradeText}</div>
+    </div>
+  </div>
+  ${zoneBlocks}
+  <div style="display:flex;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid #dce6f0;font-size:13px">
+    <div>检查员签字：<span style="border-bottom:1px solid #333;padding:0 40px">${inspector}</span></div>
+    <div>科室负责人签字：<span style="border-bottom:1px solid #333;padding:0 40px">${signLeader}</span></div>
+  </div>
+  <div style="margin-top:12px;font-size:11px;color:#999;text-align:center">本报告由MTT中心管理检查系统生成 · ${date}</div>
+  <script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script>
+  </body></html>`;
+
+  const blob = new Blob([html], { type:'text/html;charset=utf-8' });
+  window.open(URL.createObjectURL(blob), '_blank');
+}
+
+
+function onRadioChange(input, status) {
+  var item = input.closest('.check-item');
+  if (!item) return;
+  var id = item.dataset.id;
+  var zone = item.dataset.zone;
+  state[id].status = status;
+  var dr = document.getElementById('deduct-' + id);
+  if (status === 'fail') {
+    dr && dr.classList.add('visible');
+    item.classList.add('has-issue');
+  } else {
+    dr && dr.classList.remove('visible');
+    item.classList.remove('has-issue');
+  }
+  calcZone(zone);
+}
+
+// Init
+document.getElementById('checkDate').value = new Date().toISOString().split('T')[0];
+['A','B','C'].forEach(z => calcZone(z));
+
+// sync person to summary on input
+['A','B','C'].forEach(z => {
+  document.getElementById('person-'+z).addEventListener('input', () => {
+    document.getElementById('sum-person-'+z).textContent = '责任人：' + (document.getElementById('person-'+z).value || '未填写');
+  });
+});
+</script>
+</body>
+</html>
